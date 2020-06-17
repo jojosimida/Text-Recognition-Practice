@@ -21,22 +21,22 @@ def natural_keys(text):
 
 class getImage(object):
 
-	def __init__(self, opt):
-		self.opt = opt
-		self.train = opt.train_root
-		self.test = opt.test_root
+    def __init__(self, opt):
+        self.opt = opt
+        self.train = opt.train_root
+        self.test = opt.test_root
 
-		self.train_image_dirs = self.getImagefile(self.train)
-		self.test_image_dirs = self.getImagefile(self.test)
+        self.train_image_dirs = self.getImagefile(self.train)
+        self.test_image_dirs = self.getImagefile(self.test)
 
-	def getImagefile(self, path):
-		names = os.listdir(path)
-		names.remove('gt.txt')
-		dirs = [os.path.join(path, n) for n in names]
-		dirs.sort(key=natural_keys)
-		return dirs
+    def getImagefile(self, path):
+        names = os.listdir(path)
+        names.remove('gt.txt')
+        dirs = [os.path.join(path, n) for n in names]
+        dirs.sort(key=natural_keys)
+        return dirs
 
-		
+        
 class ResizeNormalize(object):
 
     def __init__(self, size, interpolation=Image.BICUBIC):
@@ -115,77 +115,77 @@ class AlignCollate(object):
 
 
 class ProcessGroundTruth(object):
-	
-	def __init__(self, opt):
-		self.opt = opt
-		self.train = opt.train_root
-		self.test = opt.test_root
-		self.train_gt = self.train+'gt.txt'
-		self.test_gt = self.test+'gt.txt'
 
-		self.train_gt = self.processGT(self.train_gt)
-		self.test_gt = self.processGT(self.test_gt)
-		self.all_char = self.get_all_char(self.train_gt)
-		self.convert2label()
-		self.train_text_tensors = self.encodeGT(self.train_gt)
-		self.test_text_tensors = self.encodeGT(self.test_gt)
+    def __init__(self, opt):
+        self.opt = opt
+        self.train = opt.train_root
+        self.test = opt.test_root
+        self.train_gt = self.train+'gt.txt'
+        self.test_gt = self.test+'gt.txt'
 
-	def processGT(self, gt):
-		content = readfile(gt)
-		labels = splitstring(content)
-		return labels
+        self.train_gt = self.processGT(self.train_gt)
+        self.test_gt = self.processGT(self.test_gt)
+        self.all_char = self.get_all_char(self.train_gt)
+        self.convert2label()
+        self.train_text_tensors = self.encodeGT(self.train_gt)
+        self.test_text_tensors = self.encodeGT(self.test_gt)
 
-	def get_all_char(self, labels):
-		return list(set(''.join(labels)))
+    def processGT(self, gt):
+        content = readfile(gt)
+        labels = splitstring(content)
+        return labels
+
+    def get_all_char(self, labels):
+        return list(set(''.join(labels)))
 
 
-	def convert2label(self):
-		list_token = ['<SOS>', '<EOS>', '<UNKNOWN>']
-		self.character = list_token + self.all_char
-		self.char2idx = {}
-		self.idx2char = {}
-		for i, char in enumerate(self.character):
-			self.char2idx[char] = i
-			self.idx2char[i] = char
+    def convert2label(self):
+        list_token = ['<SOS>', '<EOS>', '<UNKNOWN>']
+        self.character = list_token + self.all_char
+        self.char2idx = {}
+        self.idx2char = {}
+        for i, char in enumerate(self.character):
+            self.char2idx[char] = i
+            self.idx2char[i] = char
 
-		self.charsize = len(self.char2idx)
+        self.charsize = len(self.char2idx)
 
-	def encodeGT(self, text):
-		# padded with <EOS> token when the word is end.
-		text_tensor = torch.LongTensor(len(text), self.opt.max_length).fill_(1)
-		for i, t in enumerate(text):
-			t = list(t)
-			t.append('<EOS>')
-			t = [self.char2idx[char] if char in self.char2idx else 2 for char in t]
-			text_tensor[i][:len(t)] = torch.LongTensor(t)  
-		return text_tensor
+    def encodeGT(self, text):
+        # padded with <EOS> token when the word is end.
+        text_tensor = torch.LongTensor(len(text), self.opt.max_length).fill_(1)
+        for i, t in enumerate(text):
+            t = list(t)
+            t.append('<EOS>')
+            t = [self.char2idx[char] if char in self.char2idx else 2 for char in t]
+            text_tensor[i][:len(t)] = torch.LongTensor(t)  
+        return text_tensor
 
 
 class Loader(Data.DataLoader):
 
-	def __init__(self, opt, image, label, shuffle=False, device=torch.device('cpu')):
-		self.batch_size = opt.batch_size
-		data = [image, label]
-		torch_dataset = Data.TensorDataset(*(x.to(device) for x in data))
+    def __init__(self, opt, image, label, shuffle=False, device=torch.device('cpu')):
+        self.batch_size = opt.batch_size
+        data = [image, label]
+        torch_dataset = Data.TensorDataset(*(x.to(device) for x in data))
 
-		super().__init__(
-			dataset=torch_dataset,
-			batch_size=self.batch_size,
-			shuffle=shuffle,
-			num_workers=0,
-			drop_last=False
-			)
+        super().__init__(
+            dataset=torch_dataset,
+            batch_size=self.batch_size,
+            shuffle=shuffle,
+            num_workers=0,
+            drop_last=False
+            )
 
 
 def readfile(data):
-	with open(data, "r", encoding="utf-8") as f:
-		content = f.read().splitlines()
-	return content
+    with open(data, "r", encoding="utf-8") as f:
+        content = f.read().splitlines()
+    return content
 
 def splitstring(content):
-	labels = []
-	for c in content:
-		labels.append(c.split()[-1][1:-1])
-	return labels
+    labels = []
+    for c in content:
+        labels.append(c.split()[-1][1:-1])
+    return labels
 
 
